@@ -1,5 +1,3 @@
-# server/models.py
-
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import MetaData
 from sqlalchemy_serializer import SerializerMixin
@@ -13,12 +11,11 @@ convention = {
 }
 
 metadata = MetaData(naming_convention=convention)
-
 db = SQLAlchemy(metadata=metadata)
 
-
-class Zookeeper(db.Model):
+class Zookeeper(db.Model, SerializerMixin):
     __tablename__ = 'zookeepers'
+    serialize_rules = ('-animals.zookeeper',)
 
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String, unique=True)
@@ -26,9 +23,12 @@ class Zookeeper(db.Model):
 
     animals = db.relationship('Animal', back_populates='zookeeper')
 
+    def __repr__(self):
+        return f'<Zookeeper {self.name}>'
 
-class Enclosure(db.Model):
+class Enclosure(db.Model, SerializerMixin):
     __tablename__ = 'enclosures'
+    serialize_rules = ('-animals.enclosure',)
 
     id = db.Column(db.Integer, primary_key=True)
     environment = db.Column(db.String)
@@ -36,9 +36,12 @@ class Enclosure(db.Model):
 
     animals = db.relationship('Animal', back_populates='enclosure')
 
+    def __repr__(self):
+        return f'<Enclosure {self.environment}>'
 
-class Animal(db.Model):
+class Animal(db.Model, SerializerMixin):
     __tablename__ = 'animals'
+    serialize_rules = ('-zookeeper.animals', '-enclosure.animals',)
 
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String, unique=True)
@@ -47,8 +50,8 @@ class Animal(db.Model):
     zookeeper_id = db.Column(db.Integer, db.ForeignKey('zookeepers.id'))
     enclosure_id = db.Column(db.Integer, db.ForeignKey('enclosures.id'))
 
-    enclosure = db.relationship('Enclosure', back_populates='animals')
     zookeeper = db.relationship('Zookeeper', back_populates='animals')
+    enclosure = db.relationship('Enclosure', back_populates='animals')
 
     def __repr__(self):
         return f'<Animal {self.name}, a {self.species}>'
